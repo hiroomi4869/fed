@@ -14,5 +14,6 @@ def FedAvg(w):
     for k in w_avg.keys():
         for i in range(1, len(w)):
             w_avg[k] += w[i][k]
-        w_avg[k] = torch.div(w_avg[k], len(w))
+        # w_avg[k] = torch.div(, )
+        w_avg[k] = torch.true_divide(w_avg[k], len(w))
     return w_avg

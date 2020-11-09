@@ -16,9 +16,13 @@ import time
 from utils.options import args_parser
 from PIL import Image
 from models.Update import LocalUpdate
-from models.Nets import MLP, CNNMnist, CNNCifar, AlexNet, AlexNet28, ResNet, LeNet, VGG
+from models.Nets import MLP, CNNMnist, CNNCifar, AlexNet, AlexNet28, ResNet, LeNet, VGG, ResNet18, ResNet50
 from models.Fed import FedAvg
 from models.test import test_img
+from medmnist.dataset import INFO, PathMNIST, ChestMNIST, DermaMNIST, OCTMNIST, PneumoniaMNIST, RetinaMNIST, BreastMNIST, OrganMNIST_Axial, OrganMNIST_Coronal, OrganMNIST_Sagittal
+import json
+
+
 
 def read(path, type):
     img = []
@@ -278,9 +282,49 @@ if __name__ == '__main__':
         #                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         # dataset_train = datasets.ImageFolder('/home/hiroomi/下载/PPGANs-Privacy-preserving-GANs-master/PPGANS/train/',
         #                               transform=transform)
+    dataclass = {
+        "pathmnist": PathMNIST,
+        "chestmnist": ChestMNIST,
+        "dermamnist": DermaMNIST,
+        "octmnist": OCTMNIST,
+        "pneumoniamnist": PneumoniaMNIST,
+        "retinamnist": RetinaMNIST,
+        "breastmnist": BreastMNIST,
+        "organmnist_axial": OrganMNIST_Axial,
+        "organmnist_coronal": OrganMNIST_Coronal,
+        "organmnist_sagittal": OrganMNIST_Sagittal,
+    }
+    flag = 'breastmnist'
+
+    with open(INFO, 'r') as f:
+        info = json.load(f)
+        task = info[flag]['task']
+        n_channels = info[flag]['n_channels']
+        n_classes = len(info[flag]['label'])
+
+    train_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[.5], std=[.5])
+    ])
+
+    val_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[.5], std=[.5])
+    ])
+
+    test_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[.5], std=[.5])
+    ])
+
     data = 'imgdatagan'
-    dataset_train = FlameSetTrain(data)
+    '''
+    dataset_train = dataclass[flag](split='train', transform=train_transform)
+    dataset_test = dataclass[flag](split='test', transform=test_transform)
+    '''
+    dataset_train = FlameSet(data)
     dataset_test = FlameSet('test')
+    print(dataset_train)
         # sample users
         #if args.iid:
             # dataset_train = read('/home/hiroomi/下载/PPGANs-Privacy-preserving-GANs-master/PPGANS/test/', 'jpeg')
@@ -306,6 +350,7 @@ if __name__ == '__main__':
     else:
         exit('Error: unrecognized dataset')
     '''
+    
     print(dataset_train[0][0].shape)
     img_size = dataset_train[0][0].shape
 
@@ -329,11 +374,14 @@ if __name__ == '__main__':
     elif args.model == 'alexnet':
         net_glob = AlexNet28().to(args.device)
     elif args.model == 'resnet':
-        net_glob = ResNet().to(args.device)
+        # net_glob = ResNet().to(args.device)
+        net_glob = ResNet18(in_channels=1, num_classes=4).to(args.device)
     elif args.model == 'lenet':
         net_glob = LeNet().to(args.device)
     elif args.model == 'vgg16':
         net_glob = VGG().to(args.device)
+    elif args.model == 'res':
+        net_glob = Net().to(args.device)
     else:
         exit('Error: unrecognized model')
 
