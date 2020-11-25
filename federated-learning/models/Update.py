@@ -44,6 +44,10 @@ class LocalUpdate(object):
                 log_probs = net(images)
                 loss = self.loss_func(log_probs, labels)
                 loss.backward()
+
+
+
+
                 optimizer.step()
                 if self.args.verbose and batch_idx % 10 == 0:
                     print('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(

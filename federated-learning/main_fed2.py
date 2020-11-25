@@ -11,7 +11,7 @@ import copy
 import numpy as np
 from torchvision import datasets, transforms
 import torch
-
+import logging
 import time
 from utils.options import args_parser
 from PIL import Image
@@ -22,6 +22,32 @@ from models.test import test_img
 from medmnist.dataset import INFO, PathMNIST, ChestMNIST, DermaMNIST, OCTMNIST, PneumoniaMNIST, RetinaMNIST, BreastMNIST, OrganMNIST_Axial, OrganMNIST_Coronal, OrganMNIST_Sagittal
 import json
 
+
+def printlog(acctest, dataset):
+    logger = logging.getLogger('mylogger')
+    logger.setLevel(logging.DEBUG)
+    timestamp = str(int(time.time()))
+    fh = logging.FileHandler('./log/log_' + timestamp + '.txt')
+    fh.setLevel(logging.DEBUG)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+
+    # 定义handler的输出格式
+    formatter = logging.Formatter('[%(asctime)s][%(levelname)s] ## %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+
+    # 给logger添加handler
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
+    # 将print函数改为logger.info函数就可以将输出信息保存到日志文件中
+    logger.info('Trang on {}'.format(dataset))
+    logger.info('AccTest string')
+    logger.info(acctest)
+    logger.info('MaxAcc')
+    logger.info(max(acctest))
 
 
 def read(path, type):
@@ -81,13 +107,13 @@ def noniid(dataset, num_users):
     :param num_users:
     :return:
     """
-    num_shards, num_imgs = 200, 23
+    num_shards, num_imgs = 200, 18
     idx_shard = [i for i in range(num_shards)]
     dict_users = {i: np.array([], dtype='int64') for i in range(num_users)}
     idxs = np.arange(num_shards*num_imgs)
     print(dataset.label)
     labels = np.reshape(dataset.label, (-1))
-    labels = labels[:4600]
+    labels = labels[:3600]
     labels = labels.astype(int)
     # labels = np.array(dataset.label, dtype='int64')
 
@@ -175,11 +201,11 @@ class FlameSetTrain(data.Dataset):
         if image_root.split((os.path.sep))[1]=='normal':
             label = 0
         elif image_root.split((os.path.sep))[1]=='corona':
-            label = 1
-        elif image_root.split((os.path.sep))[1] == 'gan':
-            label = 2
-        elif image_root.split((os.path.sep))[1] == 'pneumonia':
             label = 3
+        elif image_root.split((os.path.sep))[1] == 'gan':
+            label = 1
+        elif image_root.split((os.path.sep))[1] == 'pneumonia':
+            label = 2
         # print(image_name,label)
         return image, label
 
@@ -236,11 +262,11 @@ class FlameSet(data.Dataset):
         if image_root.split((os.path.sep))[1]=='normal':
             label = 0
         elif image_root.split((os.path.sep))[1]=='corona':
-            label = 1
-        elif image_root.split((os.path.sep))[1] == 'gan':
-            label = 2
-        elif image_root.split((os.path.sep))[1] == 'pneumonia':
             label = 3
+        elif image_root.split((os.path.sep))[1] == 'gan':
+            label = 1
+        elif image_root.split((os.path.sep))[1] == 'pneumonia':
+            label = 2
         # print(image_name,label)
         return image, label
 
@@ -272,7 +298,7 @@ if __name__ == '__main__':
     args.dataset = 'mnist'
     args.num_channels = 1
     args.model = 'resnet'
-    args.epochs = 1000
+    args.epochs = 500
     args.gpu = 0
     args.num_classes = 4
     # args.iid = True
@@ -340,13 +366,13 @@ if __name__ == '__main__':
 
     data = 'imgdatagan'
 
-    dataset_train = dataclass[flag](split='train', transform=mytransform)
-    print(dataset_train.img.shape)
-    print(dataset_train.img)
-    dataset_test = dataclass[flag](split='test', transform=test_transform)
+    # dataset_train = dataclass[flag](split='train', transform=mytransform)
+    # print(dataset_train.img.shape)
+    # print(dataset_train.img)
+    # dataset_test = dataclass[flag](split='test', transform=test_transform)
 
-    # dataset_train = FlameSetTrain(data)
-    # dataset_test = FlameSetTrain('test')
+    dataset_train = FlameSetTrain(data)
+    dataset_test = FlameSetTrain('test')
         # sample users
         #if args.iid:
             # dataset_train = read('/home/hiroomi/下载/PPGANs-Privacy-preserving-GANs-master/PPGANS/test/', 'jpeg')
@@ -376,7 +402,7 @@ if __name__ == '__main__':
 
     # dataset_train = dataset_train.image[:4400]
 
-    img_size = dataset_train.img.shape
+    # img_size = dataset_train.img.shape
     # print(img_size)
 
 
@@ -476,7 +502,7 @@ if __name__ == '__main__':
     acc_test, loss_test = test_img(net_glob, dataset_test, args)
     net_glob.eval()
     plt.ylabel('train_loss')
-    plt.savefig('./save/fed_{}_{}_{}_C{}_iid{}_time{}_acctrain{:.2f}_acctest{:.2f}_datasat:{}.png'.format(args.dataset, args.model, args.epochs, args.frac, args.iid, time.time(), acc_train, acc_test, data))
+    plt.savefig('./save/fed_{}_{}_{}_C{}_iid{}_time{}_acctrain{:.2f}_acctest{:.2f}_datasat:{}.png'.format(args.dataset, args.model, args.epochs, args.frac, args.iid, time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(time.time())), acc_train, acc_test, data))
     plt.clf()
 
     plt.figure()
@@ -484,14 +510,14 @@ if __name__ == '__main__':
     net_glob.eval()
     plt.ylabel('Test_acc')
     plt.title('Test_acc of {} on {} iid {}'.format(args.model, data, args.iid))
-    plt.savefig('./save/Test_acc of {}_on {}_iid {}.png'.format(args.model, data, args.iid))
+    plt.savefig('./save/Test_acc of {}_on {}_iid {} Time_{}.png'.format(args.model, data, args.iid,time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(time.time()))))
 
     # testing
-    print('Dataset {}, iid {}, Model {}'.format(data, args.iid, args.model))
+    print('Dataset {}, iid {}, Model {} Time_{}'.format(data, args.iid, args.model, time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(time.time()))))
     print("Training accuracy: {:.2f}".format(acc_train))
     print("Testing accuracy: {:.2f}".format(acc_test))
     print(accstring)
     print(acctrain)
     print(acctest)
-
+    printlog(acctest, data)
 

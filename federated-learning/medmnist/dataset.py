@@ -1,4 +1,5 @@
 from medmnist import environ
+from torchvision import transforms
 import os
 import numpy as np
 from torch.utils.data import Dataset
@@ -42,6 +43,7 @@ class MedMNIST(Dataset):
 
         if self.transform is not None:
             img = self.transform(img)
+
 
         if self.target_transform is not None:
             target = self.target_transform(target)
